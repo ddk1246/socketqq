@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>Form</class>
+    <widget class="QWidget" name="Form">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>668</width>
+                <height>455</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Form</string>
+        </property>
+        <property name="styleSheet">
+            <string notr="true">*{
+                font-size:24px;
+                font-family:sans-serif;
+                }
+                #Form{
+                background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);
+                background-color:#F0FFFF;
+                }
+                QFrame{
+                background:rgba(0,0,0,0.8);
+                border-radius:15px;
+                }
+                QPushButton{
+                background:#03a9f4;
+                color:#fff;
+                border-radius:15px;
+                }
+                QLineEdit{
+                border-radius:15px;
+                color:#03a9f4;
+                }
+                QLabel{
+                color:#fff;
+                background:transparent;
+                font-size:30px;
+                }
+            </string>
+        </property>
+        <widget class="QFrame" name="frame">
+            <property name="geometry">
+                <rect>
+                    <x>150</x>
+                    <y>160</y>
+                    <width>361</width>
+                    <height>251</height>
+                </rect>
+            </property>
+            <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+            </property>
+            <widget class="QLineEdit" name="loginIP">
+                <property name="geometry">
+                    <rect>
+                        <x>20</x>
+                        <y>60</y>
+                        <width>321</width>
+                        <height>41</height>
+                    </rect>
+                </property>
+                <property name="placeholderText">
+                    <string>UserIP</string>
+                </property>
+            </widget>
+            <widget class="QLineEdit" name="loginPort">
+                <property name="geometry">
+                    <rect>
+                        <x>20</x>
+                        <y>120</y>
+                        <width>321</width>
+                        <height>41</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string/>
+                </property>
+                <property name="placeholderText">
+                    <string>Port</string>
+                </property>
+            </widget>
+            <widget class="QPushButton" name="loginButton">
+                <property name="geometry">
+                    <rect>
+                        <x>20</x>
+                        <y>180</y>
+                        <width>321</width>
+                        <height>51</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>登录</string>
+                </property>
+            </widget>
+            <widget class="QLabel" name="label">
+                <property name="geometry">
+                    <rect>
+                        <x>140</x>
+                        <y>10</y>
+                        <width>81</width>
+                        <height>41</height>
+                    </rect>
+                </property>
+                <property name="text">
+                    <string>Login</string>
+                </property>
+            </widget>
+        </widget>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>
