@@ -12,7 +12,6 @@ class MainWindow(QMainWindow):
         self.ui = QUiLoader().load(qfile_window)
 
         self.ui.SendButton.clicked.connect(self.callback)
-        self.u
 
     def callback(self):
         return

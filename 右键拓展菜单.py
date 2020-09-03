@@ -14,10 +14,12 @@ class ListMenu(QWidget):
         self.list = QListView(self)
         self.list.setContextMenuPolicy(3)
         self.list.customContextMenuRequested[QPoint].connect(self.listWidgetContext)
+
         lst = ['a', 'b', 'c']
         model = QStringListModel()
         model.setStringList(lst)
         self.list.setModel(model)
+
         hlayout = QHBoxLayout()
         hlayout.addStretch(1)
         hlayout.addWidget(self.list, 18)

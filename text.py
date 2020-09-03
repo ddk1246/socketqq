@@ -1,7 +1,11 @@
-from PySide2.QtWidgets import QApplication, QMainWindow, QShortcut, QTextBrowser, QPushButton, QWidget
-from PySide2.QtGui import QColor, QKeySequence
-from PySide2 import QtCore
-from PySide2.QtCore import Signal, QObject, QStringListModel
+# from PySide2.QtWidgets import QApplication, QMainWindow, QShortcut, QTextBrowser, QPushButton, QWidget,QMenu
+# from PySide2.QtGui import QColor, QKeySequence,QCursor
+# from PySide2 import QtCore
+# from PySide2.QtCore import Signal, QObject, QStringListModel,QPoint
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+
 from ui.mainwindow import Ui_MainWindow
 from ui.login import Ui_Form
 import socket
@@ -16,6 +20,8 @@ class LoginWindow(QWidget):
         super().__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+        # self.ui.loginButton.setShortcut('enter')
+        # self.ui.loginButton.setShortcut('ctrl+return')
 
     def loginFunc(self):
         return {'IP': self.ui.loginIP.text(), 'Port': self.ui.loginPort.text()}
@@ -41,10 +47,14 @@ class MainWindow(QMainWindow):
 
         # （begin）列表--------
         slm = QStringListModel();  # 创建mode
-        self.friendList = []  # 添加的数组数据
-        slm.setStringList(self.friendList)  # 将数据设置到model
-        self.ui.listView.setModel(slm)  # 绑定 listView 和 model
+        self.friendList = [['127.0.0.1', 7788], ['127.0.0.1', 7888], ['127.0.0.1', 8888]]  # 添加的数组数据
+        slm.setStringList(np.array(self.friendList)[:, 0])  # 将数据设置到model
 
+        # 列表右键拓展
+        self.ui.listView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.listView.customContextMenuRequested[QPoint].connect(self.listWidgetContext)
+
+        self.ui.listView.setModel(slm)  # 绑定 listView 和 model
         # （end）列表--------
 
         # 信号与槽
@@ -60,11 +70,25 @@ class MainWindow(QMainWindow):
         self.ui.actionload.triggered.connect(self.userLoginFunc)
         self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)
 
+        # self.ui.popMenu.triggered.connect(self.popMenuFunc)
+
         # self.input.show()
 
         self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))
         self.thr.start()
         self.ShortcutSetting()
+
+    def listWidgetContext(self, point):
+        listRightMenu = QMenu(self.ui.listView)
+
+        addAction = QAction(u"添加", self, triggered=self.addFriendFunc)  # 也可以指定自定义对象事件
+        alterAction = QAction(u"修改", self, triggered=lambda: self.alterFriendFunc(point))  # 也可以指定自定义对象事件
+        removeAction = QAction(u"删除", self, triggered=lambda: self.deleteFriendFunc(point))  # 也可以指定自定义对象事件
+        # //or  removeAction.triggered.connect(lambda:self.deleteFriendFunc(point))
+        listRightMenu.addAction(addAction)
+        listRightMenu.addAction(alterAction)
+        listRightMenu.addAction(removeAction)
+        listRightMenu.exec_(QCursor.pos())
 
     def systemQuitFunc(self):
         pass  # todo 系统退出
@@ -73,7 +97,8 @@ class MainWindow(QMainWindow):
         ip, port = self.friendList[qModelIndex.row()][0], self.friendList[qModelIndex.row()][1]
         self.setAimIP(ip)
         self.setAimPort(port)
-        # todo 数据库引入
+        print("clicked", ip, port)
+        # todo 数据库引入聊天内容
 
     def printToGui(self, object, text, textColor):
         object.setTextColor(QColor(textColor))
@@ -115,6 +140,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence(self.tr('Ctrl+Q')), self, self.close)
         self.ui.SendButton.setShortcut('ctrl+return')
         self.ui.SendShortcut.currentIndexChanged.connect(self.setSendButtonShortcut)
+        self.input.ui.loginButton.setShortcut('Enter')
 
     def setSendButtonShortcut(self):
         change = self.ui.SendShortcut.currentText()
@@ -150,23 +176,28 @@ class MainWindow(QMainWindow):
         # self.child.ui.loginIP.setText()
         self.input.close()
 
+    def statusbarShow(self, string):
+        self.ui.statusbar.showMessage(string, 0)
+
     def userLoginFunc(self):
+        self.input = LoginWindow()
         self.input.ui.label.setText('Login')
         self.input.ui.loginButton.setText('登录')
         self.input.ui.loginIP.setPlaceholderText('UserIP')
         self.input.ui.loginPort.setPlaceholderText('Port')
-
-        # self.input.ui.loginPort.text()
+        self.input.ui.loginButton.setShortcut('Enter')
 
         self.input.show()
         self.input.ui.loginButton.clicked.connect(self.loginAccept)
 
     def loginAccept(self):
-        self.input = LoginWindow()
-        self.setHostIP(self.input.ui.loginIP.text())
-        self.setHostPort(self.input.ui.loginPort.text())
+        ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
+        self.setHostIP(ip)
+        self.setHostPort(port)
         self.input.close()
+        self.statusbarShow('Login IP: ' + str(ip) + '    Port:' + str(port))
 
+    # (begin) 增加好友功能 ========
     def addFriendFunc(self):
         self.input = LoginWindow()
         self.input.ui.label.setText('Add Friend')
@@ -174,25 +205,86 @@ class MainWindow(QMainWindow):
         self.input.ui.loginButton.colorCount()
         self.input.ui.loginIP.setPlaceholderText('FriendIP')
         self.input.ui.loginPort.setPlaceholderText('Port')
-        self.input.show()
-        self.input.ui.loginButton.clicked.connect(self.friendAccept)
+        self.input.ui.loginButton.setShortcut('Enter')
 
-    def friendAccept(self):
+        self.input.show()
+        self.input.ui.loginButton.clicked.connect(self.addFriendAccept)
+
+    def addFriendAccept(self):
         ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
-        print("accept", ip, port)
+        print("addFriendAccept", ip, port)
         self.friendList.append([ip, port])
         print('frindList:', self.friendList)
         self.setAimIP(ip)
         self.setAimPort(port)
 
-        slm = QStringListModel();  # 创建mode
-        slm.setStringList(np.array(self.friendList)[:, 0])  # 将数据设置到model
-        self.ui.listView.setModel(slm)  # 绑定 listView 和 model
+        itemmodel = self.ui.listView.model()  # 取数据存储数据条数
+        count = itemmodel.rowCount()  # count为列表单项的总数
+        selectindex = self.ui.listView.currentIndex()  # 取当前选择的数据项位置
+
+        Pos = count  # 当前没有选择则插入到最后位置
+        itemmodel.insertRow(Pos)  # 执行插入位置列表项元素扩充
+        index = itemmodel.index(Pos, 0)  # 取插入位置的元素项   #todo 也许是(行，列)
+        stritem = ip  # 设置插入内容
+        itemmodel.setData(index, stritem, Qt.DisplayRole)  # 将内容更新到插入位置
 
         self.input.close()
 
-    def deleteFriendFunc(self):
-        pass  # todo 删除好友函数
+    #  (end)  增加好友功能 ========
+
+    # (begin) 修改好友功能 ========
+    def alterFriendFunc(self, point):
+        selectindex = self.ui.listView.currentIndex()
+        pos = selectindex.row()
+        [ip, port] = self.friendList[pos]
+        self.input = LoginWindow()
+        self.input.ui.label.setText('Alter Friend')
+        self.input.ui.loginButton.setText('修改')
+        self.input.ui.loginButton.colorCount()
+        self.input.ui.loginIP.setText(ip)
+        self.input.ui.loginPort.setText(str(port))
+        self.input.ui.loginButton.setShortcut('Enter')
+
+        self.input.show()
+        self.input.ui.loginButton.clicked.connect(lambda: self.alterFriendAccept(pos))
+
+    def alterFriendAccept(self, Pos):
+        ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
+        self.friendList[Pos] = [ip, port]
+
+        itemmodel = self.ui.listView.model()
+        index = itemmodel.index(Pos, 0)  # 取插入位置的元素项   #todo 也许是(行，列)
+        stritem = ip  # 设置插入内容
+        itemmodel.setData(index, stritem, Qt.DisplayRole)  # 将内容更新到插入位置
+
+        self.input.close()
+
+    #  (end)  修改好友功能 ========
+
+    # (begin) 删除好友功能 ========
+    def deleteFriendFunc(self, point):
+        selectindex = self.ui.listView.currentIndex()
+        # selectedindexes = self.ui.listView.selectedIndexes() #todo 函数含义是什么？
+        itemmodel = self.ui.listView.model()
+
+        if selectindex.isValid():
+            Pos = selectindex.row()
+            print("pos=", Pos)  # 取当前选择的数据项位置的顺序索引
+        else:
+            print("空选项")
+            return
+        if Pos == 0:
+            return
+        itemmodel.removeRow(Pos)
+        self.friendList.pop(Pos)
+
+        # self.ui.listView.removeItemWidget(self.ui.listView.takeItem(self.ui.listView.row(item)))
+
+    #  (end)  删除好友功能 ========
+
+    # 测试函数 ========
+    def testprint(self):
+        print("in test")
 
 
 def main():
