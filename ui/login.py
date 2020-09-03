@@ -22,31 +22,32 @@ class Ui_Form(object):
             Form.setObjectName(u"Form")
         Form.resize(668, 455)
         Form.setStyleSheet(u"*{\n"
-                           "font-size:24px;\n"
-                           "font-family:sans-serif;\n"
-                           "}\n"
-                           "#Form{ \n"
-                           "background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);\n"
-                           "background-color:#F0FFFF;\n"
-                           "}\n"
-                           "QFrame{\n"
-                           "background:rgba(0,0,0,0.8);\n"
-                           "border-radius:15px;\n"
-                           "}\n"
-                           "QPushButton{\n"
-                           "background:#03a9f4;\n"
-                           "color:#fff;\n"
-                           "border-radius:15px;\n"
-                           "}\n"
-                           "QLineEdit{\n"
-                           "border-radius:15px;\n"
-                           "color:#03a9f4;\n"
-                           "}\n"
-                           "QLabel{\n"
-                           "color:#fff;\n"
-                           "background:transparent;\n"
-                           "font-size:30px;\n"
-                           "}")
+                           "                font-size:24px;\n"
+                           "                font-family:sans-serif;\n"
+                           "                }\n"
+                           "                #Form{\n"
+                           "                background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);\n"
+                           "                background-color:#FAEBD7;\n"
+                           "                }\n"
+                           "                QFrame{\n"
+                           "                background:rgba(0,0,0,0.8);\n"
+                           "                border-radius:15px;\n"
+                           "                }\n"
+                           "                QPushButton{\n"
+                           "                background:#03a9f4;\n"
+                           "                color:#fff;\n"
+                           "                border-radius:15px;\n"
+                           "                }\n"
+                           "                QLineEdit{\n"
+                           "                border-radius:15px;\n"
+                           "                color:#03a9f4;\n"
+                           "                }\n"
+                           "                QLabel{\n"
+                           "                color:#fff;\n"
+                           "                background:transparent;\n"
+                           "                font-size:30px;\n"
+                           "                }\n"
+                           "            ")
         self.frame = QFrame(Form)
         self.frame.setObjectName(u"frame")
         self.frame.setGeometry(QRect(150, 160, 361, 251))
@@ -63,12 +64,12 @@ class Ui_Form(object):
         self.loginButton.setGeometry(QRect(20, 180, 321, 51))
         self.label = QLabel(self.frame)
         self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(140, 10, 81, 41))
+        self.label.setGeometry(QRect(80, 10, 201, 41))
+        self.label.setAlignment(Qt.AlignCenter)
 
         self.retranslateUi(Form)
 
         QMetaObject.connectSlotsByName(Form)
-
     # setupUi
 
     def retranslateUi(self, Form):
@@ -79,3 +80,4 @@ class Ui_Form(object):
         self.loginButton.setText(QCoreApplication.translate("Form", u"\u767b\u5f55", None))
         self.label.setText(QCoreApplication.translate("Form", u"Login", None))
     # retranslateUi
+

@@ -20,7 +20,7 @@
                 }
                 #Form{
                 background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);
-                background-color:#F0FFFF;
+                background-color:#FAEBD7;
                 }
                 QFrame{
                 background:rgba(0,0,0,0.8);
@@ -102,14 +102,17 @@
             <widget class="QLabel" name="label">
                 <property name="geometry">
                     <rect>
-                        <x>140</x>
+                        <x>80</x>
                         <y>10</y>
-                        <width>81</width>
+                        <width>201</width>
                         <height>41</height>
                     </rect>
                 </property>
                 <property name="text">
                     <string>Login</string>
+                </property>
+                <property name="alignment">
+                    <set>Qt::AlignCenter</set>
                 </property>
             </widget>
         </widget>
