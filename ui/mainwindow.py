@@ -28,8 +28,8 @@ class Ui_MainWindow(object):
         self.actionload.setObjectName(u"actionload")
         self.actionhelp = QAction(MainWindow)
         self.actionhelp.setObjectName(u"actionhelp")
-        self.actionAbout = QAction(MainWindow)
-        self.actionAbout.setObjectName(u"actionAbout")
+        self.actionabout = QAction(MainWindow)
+        self.actionabout.setObjectName(u"actionabout")
         self.actionaddfriend = QAction(MainWindow)
         self.actionaddfriend.setObjectName(u"actionaddfriend")
         self.action_app = QAction(MainWindow)
@@ -124,7 +124,7 @@ class Ui_MainWindow(object):
         self.menutest.addSeparator()
         self.menutest.addAction(self.actionexit)
         self.menu.addAction(self.actionhelp)
-        self.menu.addAction(self.actionAbout)
+        self.menu.addAction(self.actionabout)
 
         self.retranslateUi(MainWindow)
 
@@ -135,7 +135,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.actionload.setText(QCoreApplication.translate("MainWindow", u"\u767b\u5f55", None))
         self.actionhelp.setText(QCoreApplication.translate("MainWindow", u"QO\u5e2e\u52a9", None))
-        self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"\u5173\u4e8e", None))
+        self.actionabout.setText(QCoreApplication.translate("MainWindow", u"\u5173\u4e8e", None))
         self.actionaddfriend.setText(QCoreApplication.translate("MainWindow", u"\u6dfb\u52a0\u597d\u53cb", None))
         self.action_app.setText(QCoreApplication.translate("MainWindow", u"&app", None))
         self.actionexit.setText(QCoreApplication.translate("MainWindow", u"\u9000\u51fa", None))

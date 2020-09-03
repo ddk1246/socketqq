@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
 
         self.aimIp = '127.0.0.1'  # '10.128.211.162'
         self.aimPort = 7788
-        self.hostIp = '10.128.230.233'  # '127.0.0.1'
+        self.hostIp = str(localIP())  # 10.128.230.233
         self.hostPort = 5566
 
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,8 +72,9 @@ class MainWindow(QMainWindow):
         self.ui.actionexit.triggered.connect(self.systemQuitFunc)
         self.ui.actionload.triggered.connect(self.userLoginFunc)
         self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)
+        self.ui.actionabout.triggered.connect(self.programAbout)
+        self.ui.actionhelp.triggered.connect(self.programHelp)
 
-        # self.input.show()
         # 监听窗口线程
         self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))
         self.thr.daemon = 1
@@ -82,6 +83,19 @@ class MainWindow(QMainWindow):
         self.ShortcutSetting()
 
         self.userLoginFunc()
+
+    def programHelp(self):
+        choice = QMessageBox.information(
+            self,
+            '快捷键说明',
+            '  Ctrl+Q    :  退出\n'
+            'Ctrl+Enter  :  发送', QMessageBox.Yes, QMessageBox.Yes)
+
+    def programAbout(self):
+        choice = QMessageBox.information(
+            self,
+            '关于',
+            '开发人员 ：王赞昆   许益豪', QMessageBox.Yes, QMessageBox.Yes)
 
     def listWidgetContext(self, point):
         listRightMenu = QMenu(self.ui.listView)
@@ -96,7 +110,8 @@ class MainWindow(QMainWindow):
         listRightMenu.exec_(QCursor.pos())
 
     def systemQuitFunc(self):
-        pass  # todo 系统退出
+        QCoreApplication.instance().quit()
+        #
 
     def clickedlist(self, qModelIndex):
         ip, port = self.friendList[qModelIndex.row()][0], self.friendList[qModelIndex.row()][1]
@@ -142,6 +157,10 @@ class MainWindow(QMainWindow):
                 self.tcp_socket.sendto(info.encode("gbk"), (self.aimIp, self.aimPort))
             except Exception as e:
                 self.statusbarShow(e)
+            except OSError  as osE:
+                self.statusbarShow(osE)
+            except:
+                pass
         else:
             self.textClearSignal.emit(self.ui.textEdit, '输入不能为空', 'black')
 
@@ -198,7 +217,7 @@ class MainWindow(QMainWindow):
         self.input.ui.label.setText('Login')
         self.input.ui.loginButton.setText('登录')
         self.input.ui.loginIP.setPlaceholderText('UserIP')
-        self.input.ui.loginIP.setText(localIP())
+        self.input.ui.loginIP.setText(self.hostIp)
         self.input.ui.loginPort.setPlaceholderText('Port')
         self.input.ui.loginPort.setText(str(self.hostPort))
 
@@ -346,7 +365,6 @@ def localIP():
 
 
 def main():
-    MYIP = localIP()
     app = QApplication([])
 
     mainw = MainWindow()
