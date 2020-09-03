@@ -7,6 +7,7 @@ from ui.login import Ui_Form
 import socket
 import threading
 import time
+import numpy as np
 
 
 class LoginWindow(QWidget):
@@ -59,9 +60,7 @@ class MainWindow(QMainWindow):
         self.ui.actionload.triggered.connect(self.userLoginFunc)
         self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)
 
-        self.input.show()
-        self.input.close()
-        self.input.show()
+        # self.input.show()
 
         self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))
         self.thr.start()
@@ -172,6 +171,7 @@ class MainWindow(QMainWindow):
         self.input = LoginWindow()
         self.input.ui.label.setText('Add Friend')
         self.input.ui.loginButton.setText('添加')
+        self.input.ui.loginButton.colorCount()
         self.input.ui.loginIP.setPlaceholderText('FriendIP')
         self.input.ui.loginPort.setPlaceholderText('Port')
         self.input.show()
@@ -179,13 +179,14 @@ class MainWindow(QMainWindow):
 
     def friendAccept(self):
         ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
-        print("23330", ip, '\n', port)
+        print("accept", ip, port)
+        self.friendList.append([ip, port])
+        print('frindList:', self.friendList)
         self.setAimIP(ip)
         self.setAimPort(port)
-        self.friendList.append([ip, port])
 
         slm = QStringListModel();  # 创建mode
-        slm.setStringList(self.friendList)  # 将数据设置到model
+        slm.setStringList(np.array(self.friendList)[:, 0])  # 将数据设置到model
         self.ui.listView.setModel(slm)  # 绑定 listView 和 model
 
         self.input.close()
@@ -199,7 +200,7 @@ def main():
 
     mainw = MainWindow()
     mainw.setWindowTitle('QO')
-    # mainw.show()
+    mainw.show()
 
     app.exec_()
 
