@@ -21,13 +21,18 @@ class Ui_Form(object):
         if not Form.objectName():
             Form.setObjectName(u"Form")
         Form.resize(668, 455)
+        palette = QPalette()
+        pix = QPixmap("./login.jpg")
+        pix = pix.scaled(Form.width(), Form.height())
+        palette.setBrush(QPalette.Background, QBrush(pix))
+        Form.setPalette(palette)
         Form.setStyleSheet(u"*{\n"
                            "                font-size:24px;\n"
                            "                font-family:sans-serif;\n"
                            "                }\n"
                            "                #Form{\n"
-                           "                background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);\n"
-                           "                background-color:#FAEBD7;\n"
+                           # "                background-image:url(D:/cpp/Py zk/socketqq/ui/login.jpg);\n"
+                           # "                background-color:#FAEBD7;\n"
                            "                }\n"
                            "                QFrame{\n"
                            "                background:rgba(0,0,0,0.8);\n"

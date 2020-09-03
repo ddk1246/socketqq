@@ -12,6 +12,7 @@ import socket
 import threading
 import time
 import numpy as np
+import re
 
 
 class LoginWindow(QWidget):
@@ -20,6 +21,7 @@ class LoginWindow(QWidget):
         super().__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
         # self.ui.loginButton.setShortcut('enter')
         # self.ui.loginButton.setShortcut('ctrl+return')
 
@@ -39,13 +41,14 @@ class MainWindow(QMainWindow):
 
         self.aimIp = '127.0.0.1'  # '10.128.211.162'
         self.aimPort = 7788
-        self.hostIp = '127.0.0.1'  # '10.128.230.233'
-        self.hostPort = 55666
+        self.hostIp = '10.128.230.233'  # '127.0.0.1'
+        self.hostPort = 5566
 
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.tcp_socket.bind((self.hostIp, self.hostPort))
 
         # （begin）列表--------
+        # 列表加载
         slm = QStringListModel();  # 创建mode
         self.friendList = [['127.0.0.1', 7788], ['127.0.0.1', 7888], ['127.0.0.1', 8888]]  # 添加的数组数据
         slm.setStringList(np.array(self.friendList)[:, 0])  # 将数据设置到model
@@ -63,27 +66,29 @@ class MainWindow(QMainWindow):
 
         self.ui.SendButton.clicked.connect(self.threadOfSendMessage)
         self.ui.ResetButton.clicked.connect(self.clearSendText)
-        self.input.ui.loginButton.clicked.connect(self.childAccept)
+        # self.input.ui.loginButton.clicked.connect(self.childAccept)
         self.ui.listView.clicked.connect(self.clickedlist)
 
         self.ui.actionexit.triggered.connect(self.systemQuitFunc)
         self.ui.actionload.triggered.connect(self.userLoginFunc)
         self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)
 
-        # self.ui.popMenu.triggered.connect(self.popMenuFunc)
-
         # self.input.show()
-
+        # 监听窗口线程
         self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))
+        self.thr.daemon = 1
         self.thr.start()
+
         self.ShortcutSetting()
+
+        self.userLoginFunc()
 
     def listWidgetContext(self, point):
         listRightMenu = QMenu(self.ui.listView)
 
         addAction = QAction(u"添加", self, triggered=self.addFriendFunc)  # 也可以指定自定义对象事件
-        alterAction = QAction(u"修改", self, triggered=lambda: self.alterFriendFunc(point))  # 也可以指定自定义对象事件
-        removeAction = QAction(u"删除", self, triggered=lambda: self.deleteFriendFunc(point))  # 也可以指定自定义对象事件
+        alterAction = QAction(u"修改", self, triggered=lambda: self.alterFriendFunc())  # 也可以指定自定义对象事件
+        removeAction = QAction(u"删除", self, triggered=lambda: self.deleteFriendFunc())  # 也可以指定自定义对象事件
         # //or  removeAction.triggered.connect(lambda:self.deleteFriendFunc(point))
         listRightMenu.addAction(addAction)
         listRightMenu.addAction(alterAction)
@@ -97,6 +102,8 @@ class MainWindow(QMainWindow):
         ip, port = self.friendList[qModelIndex.row()][0], self.friendList[qModelIndex.row()][1]
         self.setAimIP(ip)
         self.setAimPort(port)
+        self.statusbarShow('Login IP: ' + str(self.hostIp) + '    Port:' + str(self.hostPort) +
+                           '        Aim IP: ' + str(ip) + '    Port:' + str(port))
         print("clicked", ip, port)
         # todo 数据库引入聊天内容
 
@@ -131,11 +138,14 @@ class MainWindow(QMainWindow):
             self.textSendSignal.emit(self.ui.textBrowser, self.hostIp + '  ' + sendTime + ' [本地]', '#87CEEB')
             self.textSendSignal.emit(self.ui.textBrowser, '  ' + info, 'black')
             self.textClearSignal.emit(self.ui.textEdit, '', 'black')
-            self.tcp_socket.sendto(info.encode("gbk"), (self.aimIp, self.aimPort))
+            try:
+                self.tcp_socket.sendto(info.encode("gbk"), (self.aimIp, self.aimPort))
+            except Exception as e:
+                self.statusbarShow(e)
         else:
             self.textClearSignal.emit(self.ui.textEdit, '输入不能为空', 'black')
 
-    # (begin)快捷键设置------------
+    # (begin) 快捷键设置------------
     def ShortcutSetting(self):
         QShortcut(QKeySequence(self.tr('Ctrl+Q')), self, self.close)
         self.ui.SendButton.setShortcut('ctrl+return')
@@ -150,7 +160,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(self.tr('return')), self, self.ui.SendButton.click)
         # todo(wzk) 应实现回车发送功能
 
-    # (end)快捷键设置------------
+    #  (end)  快捷键设置------------
 
     def setHostIP(self, ipstr):
         self.hostIp = str(ipstr)
@@ -164,6 +174,7 @@ class MainWindow(QMainWindow):
     def setAimPort(self, portstr):
         self.aimPort = int(portstr)
 
+    # (begin)  old ========
     def accept(self, object):
         self.setHostIP(object.ui.loginIP.text())
         self.setHostPort(object.ui.loginPort.text())
@@ -176,15 +187,21 @@ class MainWindow(QMainWindow):
         # self.child.ui.loginIP.setText()
         self.input.close()
 
+    #  (end)  old ========
+
     def statusbarShow(self, string):
         self.ui.statusbar.showMessage(string, 0)
 
+    # (begin) 用户登录 ========
     def userLoginFunc(self):
         self.input = LoginWindow()
         self.input.ui.label.setText('Login')
         self.input.ui.loginButton.setText('登录')
         self.input.ui.loginIP.setPlaceholderText('UserIP')
+        self.input.ui.loginIP.setText(localIP())
         self.input.ui.loginPort.setPlaceholderText('Port')
+        self.input.ui.loginPort.setText(str(self.hostPort))
+
         self.input.ui.loginButton.setShortcut('Enter')
 
         self.input.show()
@@ -192,10 +209,20 @@ class MainWindow(QMainWindow):
 
     def loginAccept(self):
         ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
+        if not isIP(ip) or not isPort(port):
+            self.input.close()
+            QMessageBox.warning(self, '警告', '请输入正确的IP和端口', QMessageBox.Yes, QMessageBox.Yes)
+            self.userLoginFunc()
+            return
         self.setHostIP(ip)
         self.setHostPort(port)
         self.input.close()
+
+        self.show()
+        # print(self.isActiveWindow()) #判断主窗口是否激活
         self.statusbarShow('Login IP: ' + str(ip) + '    Port:' + str(port))
+
+    #  (end)  用户登录 ========
 
     # (begin) 增加好友功能 ========
     def addFriendFunc(self):
@@ -212,6 +239,11 @@ class MainWindow(QMainWindow):
 
     def addFriendAccept(self):
         ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
+        if not isIP(ip) or not isPort(port):
+            self.input.close()
+            QMessageBox.warning(self, '警告', '请输入正确的IP和端口', QMessageBox.Yes, QMessageBox.Yes)
+            self.addFriendFunc()
+            return
         print("addFriendAccept", ip, port)
         self.friendList.append([ip, port])
         print('frindList:', self.friendList)
@@ -233,7 +265,7 @@ class MainWindow(QMainWindow):
     #  (end)  增加好友功能 ========
 
     # (begin) 修改好友功能 ========
-    def alterFriendFunc(self, point):
+    def alterFriendFunc(self):
         selectindex = self.ui.listView.currentIndex()
         pos = selectindex.row()
         [ip, port] = self.friendList[pos]
@@ -250,6 +282,11 @@ class MainWindow(QMainWindow):
 
     def alterFriendAccept(self, Pos):
         ip, port = self.input.ui.loginIP.text(), self.input.ui.loginPort.text()
+        if not isIP(ip) or not isPort(port):
+            self.input.close()
+            QMessageBox.warning(self, '警告', '请输入正确的IP和端口', QMessageBox.Yes, QMessageBox.Yes)
+            self.alterFriendFunc()
+            return
         self.friendList[Pos] = [ip, port]
 
         itemmodel = self.ui.listView.model()
@@ -262,7 +299,7 @@ class MainWindow(QMainWindow):
     #  (end)  修改好友功能 ========
 
     # (begin) 删除好友功能 ========
-    def deleteFriendFunc(self, point):
+    def deleteFriendFunc(self):
         selectindex = self.ui.listView.currentIndex()
         # selectedindexes = self.ui.listView.selectedIndexes() #todo 函数含义是什么？
         itemmodel = self.ui.listView.model()
@@ -279,6 +316,7 @@ class MainWindow(QMainWindow):
         self.friendList.pop(Pos)
 
         # self.ui.listView.removeItemWidget(self.ui.listView.takeItem(self.ui.listView.row(item)))
+        # todo 注释函数和含义
 
     #  (end)  删除好友功能 ========
 
@@ -287,12 +325,33 @@ class MainWindow(QMainWindow):
         print("in test")
 
 
+def isIP(str):
+    p = re.compile('^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
+    if p.match(str):
+        return True
+    else:
+        return False
+
+
+def isPort(num):
+    return str(num).isdigit()
+
+
+def localIP():
+    hostname = socket.gethostname()
+    print("Host name: %s" % hostname)
+    sysinfo = socket.gethostbyname_ex(hostname)
+    ip_addr = sysinfo[2]
+    return ip_addr[-1]
+
+
 def main():
+    MYIP = localIP()
     app = QApplication([])
 
     mainw = MainWindow()
     mainw.setWindowTitle('QO')
-    mainw.show()
+    # mainw.show()
 
     app.exec_()
 

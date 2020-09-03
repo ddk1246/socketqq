@@ -1,10 +1,15 @@
-import numpy as np
+from PyQt5.QtWidgets import QWidget, QApplication
+from PyQt5.QtGui import QPalette, QBrush, QPixmap
+import sys
 
-a = np.array([[]])
-b = []
-b.append([7, 8])
-b.append([9, 2])
-b[:, 0]
-print(b)
-# a=np.append(a,[[1,2]],0)
-# print(a)
+app = QApplication(sys.argv)
+
+w = QWidget()
+palette = QPalette()
+pix = QPixmap("ui/login.jpg")
+pix = pix.scaled(w.width(), w.height())
+palette.setBrush(QPalette.Background, QBrush(pix))
+w.setPalette(palette)
+w.show()
+
+sys.exit(app.exec())
