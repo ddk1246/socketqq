@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.input = LoginWindow()
 
-        self.aimIp = '127.0.0.1'  # '10.128.211.162'
+        self.aimIp = '10.128.211.162'  # '127.0.0.1'
         self.aimPort = 7788
         self.hostIp = str(localIP())  # 10.128.230.233
         self.hostPort = 5566
