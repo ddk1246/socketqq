@@ -13,7 +13,7 @@ import threading
 import time
 import numpy as np
 import re
-
+import sqlite3
 
 class LoginWindow(QWidget):
 
@@ -47,16 +47,19 @@ class MainWindow(QMainWindow):
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.tcp_socket.bind((self.hostIp, self.hostPort))
 
+        # (begin) 数据库添加 ========
+        self.friendList = [['好友列表', 0]]
+        self.initSQL()
+        #  (end)  数据库添加 ========
+
         # （begin）列表--------
         # 列表加载
         slm = QStringListModel();  # 创建mode
-        self.friendList = [['127.0.0.1', 7788], ['127.0.0.1', 7888], ['127.0.0.1', 8888]]  # 添加的数组数据
         slm.setStringList(np.array(self.friendList)[:, 0])  # 将数据设置到model
 
         # 列表右键拓展
         self.ui.listView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.listView.customContextMenuRequested[QPoint].connect(self.listWidgetContext)
-
         self.ui.listView.setModel(slm)  # 绑定 listView 和 model
         # （end）列表--------
 
@@ -84,6 +87,29 @@ class MainWindow(QMainWindow):
 
         self.userLoginFunc()
 
+    def initSQL(self):
+        self.con = sqlite3.connect('sql.db')
+        self.cur = self.con.cursor()
+
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS FRIENDS(
+                               IP TEXT NOT NULL,
+                               PORT INT NOT NULL);''')
+        self.con.commit()
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS CHAT(
+                               FROMIP TEXT NOT NULL,
+                               FROMPORT INT NOT NULL,
+                               TOIP TEXT NOT NULL,
+                               TOPORT INT NOT NULL,
+                               TIME TEXT NOT NULL,
+                               INFO TEXT NOT NULL);''')
+        self.con.commit()
+
+        cursor = self.cur.execute("SELECT IP,PORT FROM FRIENDS")
+
+        for row in cursor:
+            self.friendList.append([str(row[0]), row[1]])  # 添加的数组数据
+            print(self.friendList)
+
     def programHelp(self):
         choice = QMessageBox.information(
             self,
@@ -110,17 +136,24 @@ class MainWindow(QMainWindow):
         listRightMenu.exec_(QCursor.pos())
 
     def systemQuitFunc(self):
+        self.con.close()
         QCoreApplication.instance().quit()
-        #
 
     def clickedlist(self, qModelIndex):
-        ip, port = self.friendList[qModelIndex.row()][0], self.friendList[qModelIndex.row()][1]
+        [ip, port] = self.friendList[qModelIndex.row()]
         self.setAimIP(ip)
         self.setAimPort(port)
-        self.statusbarShow('Login IP: ' + str(self.hostIp) + '    Port:' + str(self.hostPort) +
-                           '        Aim IP: ' + str(ip) + '    Port:' + str(port))
+        self.showCurrentStatus()
         print("clicked", ip, port)
-        # todo 数据库引入聊天内容
+
+        self.cur.execute(
+            "SELECT FROMIP,TIME,INFO FROM CHAT WHERE (FROMIP=:fromip AND FROMPORT=:fromport) OR (TOIP=toip AND TOPORT=:toport);",
+            {"fromip": ip, "fromport": port, "toip": ip, "toport": port})
+        self.con.commit()
+        self.clearToGui(self.ui.textBrowser, '', 'black')
+        for row in self.cur:
+            self.textSendSignal.emit(self.ui.textBrowser, row[0] + '  ' + row[1], 'gray')
+            self.textSendSignal.emit(self.ui.textBrowser, '  ' + row[2], 'gray')
 
     def printToGui(self, object, text, textColor):
         object.setTextColor(QColor(textColor))
@@ -144,7 +177,13 @@ class MainWindow(QMainWindow):
             recv_time = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
             self.textSendSignal.emit(self.ui.textBrowser, recv_data[1][0] + '  ' + recv_time, 'red')
             self.textSendSignal.emit(self.ui.textBrowser, '  ' + recv_data[0].decode('gbk'), 'black')
-            # print("收到了消息%s:%s" % (str(recv_data[1]), recv_data[0].decode("gbk")))
+
+            self.cur.execute("INSERT INTO CHAT (FROMIP,FROMPORT,TOIP,TOPORT,TIME,INFO) VALUES (?,?,?,?,?,?)",
+                             (recv_data[1][0], recv_data[1][1], self.hostIp, self.hostPort,
+                              recv_time, recv_data[0].decode('gbk')))
+            self.con.commit()
+
+            print("收到了消息%s:%s" % (str(recv_data[1]), recv_data[0].decode("gbk")))
 
     def sendMessageFunc(self):
         info = self.ui.textEdit.toPlainText()
@@ -153,6 +192,12 @@ class MainWindow(QMainWindow):
             self.textSendSignal.emit(self.ui.textBrowser, self.hostIp + '  ' + sendTime + ' [本地]', '#87CEEB')
             self.textSendSignal.emit(self.ui.textBrowser, '  ' + info, 'black')
             self.textClearSignal.emit(self.ui.textEdit, '', 'black')
+
+            self.cur.execute("INSERT INTO CHAT (FROMIP,FROMPORT,TOIP,TOPORT,TIME,INFO) VALUES (?,?,?,?,?,?)",
+                             (self.hostIp, self.hostPort, self.aimIp, self.aimPort,
+                              sendTime, info))
+            self.con.commit()
+
             try:
                 self.tcp_socket.sendto(info.encode("gbk"), (self.aimIp, self.aimPort))
             except Exception as e:
@@ -207,9 +252,12 @@ class MainWindow(QMainWindow):
         self.input.close()
 
     #  (end)  old ========
+    def showCurrentStatus(self):
+        self.statusbarShow('Login IP: ' + str(self.hostIp) + '    Port:' + str(self.hostPort) +
+                           '        Aim IP: ' + str(self.aimIp) + '    Port:' + str(self.aimIp))
 
     def statusbarShow(self, string):
-        self.ui.statusbar.showMessage(string, 0)
+        self.ui.statusbar.showMessage(str(string), 0)
 
     # (begin) 用户登录 ========
     def userLoginFunc(self):
@@ -238,6 +286,9 @@ class MainWindow(QMainWindow):
         self.input.close()
 
         self.show()
+        # self.clickedlist(self.ui.listView.index(1))
+        self.printToGui(self.ui.textBrowser, '1. 单击左侧列表开启聊天系统，右键打开拓展菜单\n2. 版权所有:wzk xyh', 'black')
+        # print(self.ui.listView.modelColumn())
         # print(self.isActiveWindow()) #判断主窗口是否激活
         self.statusbarShow('Login IP: ' + str(ip) + '    Port:' + str(port))
 
@@ -263,11 +314,16 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, '警告', '请输入正确的IP和端口', QMessageBox.Yes, QMessageBox.Yes)
             self.addFriendFunc()
             return
+
+        self.setAimIP(ip)
+        self.setAimPort(port)
+
         print("addFriendAccept", ip, port)
         self.friendList.append([ip, port])
         print('frindList:', self.friendList)
-        self.setAimIP(ip)
-        self.setAimPort(port)
+
+        self.cur.execute("INSERT INTO FRIENDS (IP,PORT) VALUES (?,?)", (ip, port))
+        self.con.commit()
 
         itemmodel = self.ui.listView.model()  # 取数据存储数据条数
         count = itemmodel.rowCount()  # count为列表单项的总数
@@ -280,6 +336,7 @@ class MainWindow(QMainWindow):
         itemmodel.setData(index, stritem, Qt.DisplayRole)  # 将内容更新到插入位置
 
         self.input.close()
+        self.showCurrentStatus()
 
     #  (end)  增加好友功能 ========
 
@@ -306,7 +363,14 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, '警告', '请输入正确的IP和端口', QMessageBox.Yes, QMessageBox.Yes)
             self.alterFriendFunc()
             return
+
+        self.setAimIP(ip)
+        self.setAimPort(port)
         self.friendList[Pos] = [ip, port]
+
+        self.cur.execute("UPDATE FRIENDS SET IP=:newip,PORT=:newport WHERE IP=:ip AND PORT=:port;",
+                         {"newip": ip, "newport": port, "ip": self.friendList[Pos][0], "port": self.friendList[Pos][1]})
+        self.con.commit()
 
         itemmodel = self.ui.listView.model()
         index = itemmodel.index(Pos, 0)  # 取插入位置的元素项   #todo 也许是(行，列)
@@ -314,7 +378,6 @@ class MainWindow(QMainWindow):
         itemmodel.setData(index, stritem, Qt.DisplayRole)  # 将内容更新到插入位置
 
         self.input.close()
-
     #  (end)  修改好友功能 ========
 
     # (begin) 删除好友功能 ========
@@ -332,6 +395,11 @@ class MainWindow(QMainWindow):
         if Pos == 0:
             return
         itemmodel.removeRow(Pos)
+
+        self.cur.execute("DELETE FROM FRIENDS WHERE IP=:ip AND PORT=:port;",
+                         {"ip": self.friendList[Pos][0], "port": self.friendList[Pos][1]})
+        self.con.commit()
+
         self.friendList.pop(Pos)
 
         # self.ui.listView.removeItemWidget(self.ui.listView.takeItem(self.ui.listView.row(item)))

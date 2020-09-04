@@ -26,6 +26,7 @@ class Ui_Form(object):
         pix = pix.scaled(Form.width(), Form.height())
         palette.setBrush(QPalette.Background, QBrush(pix))
         Form.setPalette(palette)
+
         Form.setStyleSheet(u"*{\n"
                            "                font-size:24px;\n"
                            "                font-family:sans-serif;\n"
