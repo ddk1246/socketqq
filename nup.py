@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtGui import QPalette, QBrush, QPixmap
 import sys
+
+from PyQt5.QtGui import QPalette, QBrush, QPixmap
+from PyQt5.QtWidgets import QWidget, QApplication
 
 app = QApplication(sys.argv)
 

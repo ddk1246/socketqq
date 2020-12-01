@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>QOsign.png</file>
+        <file alias="login.jpg">ui/login.jpg</file>
+    </qresource>
+    <qresource prefix="">
+        <file>
+
+        </file>
+    </qresource>
+</RCC>

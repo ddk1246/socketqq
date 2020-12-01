@@ -18,38 +18,42 @@ import sqlite3
 class LoginWindow(QWidget):
 
     def __init__(self):
-        super().__init__()
-        self.ui = Ui_Form()
-        self.ui.setupUi(self)
+        super().__init__()  # 调用父类初始化函数
+        self.ui = Ui_Form()  # 继承UI界面
+        self.ui.setupUi(self)  # ui界面初始化
 
         # self.ui.loginButton.setShortcut('enter')
         # self.ui.loginButton.setShortcut('ctrl+return')
 
     def loginFunc(self):
+        '''
+        登录回调函数
+        :return:返回 登录界面的IP值和Port值
+        '''
         return {'IP': self.ui.loginIP.text(), 'Port': self.ui.loginPort.text()}
 
 
 class MainWindow(QMainWindow):
-    textSendSignal = Signal(QPushButton, str, QColor)
-    textClearSignal = Signal(QPushButton, str, QColor)
+    textSendSignal = Signal(QPushButton, str, QColor)  # 其他线程传回消息的UI触发信号，文本发送信号
+    textClearSignal = Signal(QPushButton, str, QColor)  # 其他线程传回消息的UI触发信号，文本清空信号
 
     def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.input = LoginWindow()
+        self.input = LoginWindow()  # 登录界面UI
 
-        self.aimIp = '10.128.211.162'  # '127.0.0.1'
-        self.aimPort = 7788
-        self.hostIp = str(localIP())  # 10.128.230.233
-        self.hostPort = 5566
+        self.aimIp = '10.128.211.162'  # '127.0.0.1' 目标IP
+        self.aimPort = 7788  # 目标端口
+        self.hostIp = str(localIP())  # 10.128.230.233 主机IP
+        self.hostPort = 5566  # 主机端口
 
-        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.tcp_socket.bind((self.hostIp, self.hostPort))
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # 通信线程
+        self.tcp_socket.bind((self.hostIp, self.hostPort))  # 通信线程绑定至固定IP
 
         # (begin) 数据库添加 ========
         self.friendList = [['好友列表', 0]]
-        self.initSQL()
+        self.initSQL()  # 数据库初始化
         #  (end)  数据库添加 ========
 
         # （begin）列表--------
@@ -64,31 +68,32 @@ class MainWindow(QMainWindow):
         # （end）列表--------
 
         # 信号与槽
-        self.textSendSignal.connect(self.printToGui)
-        self.textClearSignal.connect(self.clearToGui)
+        self.textSendSignal.connect(self.printToGui)  # 文本发送信号触发信号
+        self.textClearSignal.connect(self.clearToGui)  # 文本清除信号触发信号
 
-        self.ui.SendButton.clicked.connect(self.threadOfSendMessage)
-        self.ui.ResetButton.clicked.connect(self.clearSendText)
+        self.ui.SendButton.clicked.connect(self.threadOfSendMessage)  # 点击发送按钮触发的槽函数
+        self.ui.ResetButton.clicked.connect(self.clearSendText)  # 点击复位按钮触发的槽函数
+        self.ui.textEdit.textChanged.connect(self.showCurrentStatus)  # 发射区内容修改时状态条显示
         # self.input.ui.loginButton.clicked.connect(self.childAccept)
-        self.ui.listView.clicked.connect(self.clickedlist)
+        self.ui.listView.clicked.connect(self.clickedlist)  # 列表用户点击信号的槽函数
 
-        self.ui.actionexit.triggered.connect(self.systemQuitFunc)
-        self.ui.actionload.triggered.connect(self.userLoginFunc)
-        self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)
-        self.ui.actionabout.triggered.connect(self.programAbout)
-        self.ui.actionhelp.triggered.connect(self.programHelp)
+        self.ui.actionexit.triggered.connect(self.systemQuitFunc)  # 退出信号
+        self.ui.actionload.triggered.connect(self.userLoginFunc)  # 登录信号
+        self.ui.actionaddfriend.triggered.connect(self.addFriendFunc)  # 添加朋友信号
+        self.ui.actionabout.triggered.connect(self.programAbout)  # 关于界面信号
+        self.ui.actionhelp.triggered.connect(self.programHelp)  # 帮助界面信号
 
         # 监听窗口线程
-        self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))
+        self.thr = threading.Thread(target=self.recvMessageFunc, args=(self.tcp_socket,))  # 消息接收线程
         self.thr.daemon = 1
         self.thr.start()
 
-        self.ShortcutSetting()
+        self.ShortcutSetting()  # 快捷键设置
 
-        self.userLoginFunc()
+        self.userLoginFunc()  #显示登录界面
 
     def initSQL(self):
-        self.con = sqlite3.connect('sql.db')
+        self.con = sqlite3.connect('sql.db', check_same_thread=False)
         self.cur = self.con.cursor()
 
         self.cur.execute('''CREATE TABLE IF NOT EXISTS FRIENDS(
@@ -156,10 +161,24 @@ class MainWindow(QMainWindow):
             self.textSendSignal.emit(self.ui.textBrowser, '  ' + row[2], 'gray')
 
     def printToGui(self, object, text, textColor):
+        '''
+        将消息打印
+        :param object:打印消息的区域
+        :param text: 消息文本
+        :param textColor: 文本颜色
+        :return: None
+        '''
         object.setTextColor(QColor(textColor))
         object.append(str(text))
 
     def clearToGui(self, object, remindMessage, messageColor):
+        '''
+        消息区清空
+        :param object: 清空消息的区域
+        :param remindMessage: 清空后的预置提醒
+        :param messageColor: 预置提醒的字体颜色
+        :return:
+        '''
         object.setText('')
         object.setPlaceholderText(str(remindMessage))
 
@@ -167,6 +186,10 @@ class MainWindow(QMainWindow):
         self.textClearSignal.emit(self.ui.textEdit, '', 'black')
 
     def threadOfSendMessage(self):
+        '''
+        消息发送临时线程
+        :return:
+        '''
         ts = threading.Thread(target=self.sendMessageFunc)
         ts.start()
 
@@ -254,7 +277,7 @@ class MainWindow(QMainWindow):
     #  (end)  old ========
     def showCurrentStatus(self):
         self.statusbarShow('Login IP: ' + str(self.hostIp) + '    Port:' + str(self.hostPort) +
-                           '        Aim IP: ' + str(self.aimIp) + '    Port:' + str(self.aimIp))
+                           '        Aim IP: ' + str(self.aimIp) + '    Port:' + str(self.aimPort))
 
     def statusbarShow(self, string):
         self.ui.statusbar.showMessage(str(string), 0)
@@ -413,6 +436,11 @@ class MainWindow(QMainWindow):
 
 
 def isIP(str):
+    '''
+    判别IP是否合法
+    :param str: IP值 如10.3.8.211
+    :return: 合法返回Ture，否则返回False
+    '''
     p = re.compile('^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
     if p.match(str):
         return True
@@ -437,6 +465,7 @@ def main():
 
     mainw = MainWindow()
     mainw.setWindowTitle('QO')
+    mainw.setWindowIcon(QIcon('QOsign.png'))
     # mainw.show()
 
     app.exec_()
